@@ -1,6 +1,15 @@
+const fs = require("fs");
 const path = require("path");
-const { build } = require("esbuild");
-const { sassPlugin } = require("esbuild-sass-plugin");
+const { createRequire } = require("module");
+
+// aai: resolve the build tools from the package, not from this script's folder. As an npm
+// workspace of aai-dash, the package's pinned esbuild is nested under it, and a plain
+// require from here would find the host repo's newer esbuild instead.
+const requireFromPackage = createRequire(
+  path.resolve(__dirname, "../packages/excalidraw/package.json"),
+);
+const { build } = requireFromPackage("esbuild");
+const { sassPlugin } = requireFromPackage("esbuild-sass-plugin");
 const { parseEnvVariables } = require("../packages/excalidraw/env.cjs");
 
 const ENV_VARS = {
@@ -75,5 +84,7 @@ const createESMRawBuild = async () => {
 };
 
 (async () => {
+  // aai: replaces the `rm -rf dist` that build:esm ran, which cmd.exe can't.
+  fs.rmSync("dist", { recursive: true, force: true });
   await createESMRawBuild();
 })();
